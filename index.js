@@ -16,8 +16,8 @@ const octokit = new Octokit({
   userAgent: 'Labeller v2'
 });
 const httpse = {
-  owner: config.github_user,
-  repo: config.github_repo
+  owner: github.repository_owner,
+  repo: github.repository
 }
 
 let ProgressBar = require('progress');
