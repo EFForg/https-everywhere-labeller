@@ -1,0 +1,7 @@
+name: 'Alexa Labeller'
+description: 'Label PRs with Top Alexa Labels'
+inputs:
+  repo-token: repo-token: ${{ secrets.GITHUB_TOKEN }}
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
