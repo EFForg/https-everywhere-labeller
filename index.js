@@ -7,7 +7,6 @@ const _ = require('lodash');
 const parseXML = require('xml2js').parseString;
 const axios = require('axios');
 const unzip = require('unzipper');
-const config = require('./config');
 const async = require('async');
 
 
