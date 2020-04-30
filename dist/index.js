@@ -42768,16 +42768,13 @@ const parseXML = __webpack_require__(803).parseString;
 const axios = __webpack_require__(554);
 const unzip = __webpack_require__(309);
 const async = __webpack_require__(579);
+const context = github.context;
 
 
 const octokit = new Octokit({
   auth: core.getInput('repo-token', { required: true }),
   userAgent: 'Labeller v2'
 });
-const httpse = {
-  owner: github.repository_owner,
-  repo: github.repository
-}
 
 let ProgressBar = __webpack_require__(175);
 let alexa_labels = ['top-1m', 'top-100k', 'top-10k', 'top-1k', 'top-100'];
@@ -42841,7 +42838,7 @@ class Process {
 
   add_label(chosen_label, pr_number) {
     octokit.issues.addLabels({
-      ...httpse,
+      ...context.repo,
       issue_number: pr_number,
       labels: [chosen_label]
     });
@@ -42902,7 +42899,7 @@ function get_prs(alexa) {
 
   octokit.paginate(
     "GET /repos/:owner/:repo/pulls",
-    httpse,
+    ...context.repo,
   )
   .then(prs => {
     process_prs(alexa, prs)
@@ -42920,7 +42917,7 @@ function process_prs(alexa, prs) {
     let domain_label_pairs = [];
 
     octokit.pulls.listFiles({
-      ...httpse,
+      ...context.repo,
       pull_number: pr.number,
     }).then(files => {
       let rank_number = process.files(files, alexa);
