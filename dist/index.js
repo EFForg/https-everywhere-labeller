@@ -21040,6 +21040,8 @@ async function run(alexa) {
 
     if (!fileList.every(file => rulesetGlob.match(file.name))) {
       // Don't touch PRs that modify anything except rulesets
+      console.log(fileList);
+      console.log(alexa);
       return;
     } else {
       console.log(fileList);
