@@ -4709,7 +4709,7 @@ module.exports = __webpack_require__(896);
 module.exports = parseOptions;
 
 const { Deprecation } = __webpack_require__(733);
-const { getUserAgent } = __webpack_require__(604);
+const { getUserAgent } = __webpack_require__(153);
 const once = __webpack_require__(285);
 
 const pkg = __webpack_require__(179);
@@ -5189,7 +5189,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 var request = __webpack_require__(965);
 var universalUserAgent = __webpack_require__(604);
 
-const VERSION = "4.3.1";
+const VERSION = "4.5.0";
 
 class GraphqlError extends Error {
   constructor(request, response) {
@@ -5208,7 +5208,7 @@ class GraphqlError extends Error {
 
 }
 
-const NON_VARIABLE_OPTIONS = ["method", "baseUrl", "url", "headers", "request", "query"];
+const NON_VARIABLE_OPTIONS = ["method", "baseUrl", "url", "headers", "request", "query", "mediaType"];
 function graphql(request, query, options) {
   options = typeof query === "string" ? options = Object.assign({
     query
@@ -5747,7 +5747,35 @@ module.exports = function xhrAdapter(config) {
 
 
 /***/ }),
-/* 153 */,
+/* 153 */
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+
+var osName = _interopDefault(__webpack_require__(791));
+
+function getUserAgent() {
+  try {
+    return `Node.js/${process.version.substr(1)} (${osName()}; ${process.arch})`;
+  } catch (error) {
+    if (/wmic os get Caption/.test(error.message)) {
+      return "Windows <version undetectable>";
+    }
+
+    throw error;
+  }
+}
+
+exports.getUserAgent = getUserAgent;
+//# sourceMappingURL=index.js.map
+
+
+/***/ }),
 /* 154 */,
 /* 155 */,
 /* 156 */,
@@ -14105,7 +14133,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
 var isPlainObject = _interopDefault(__webpack_require__(337));
-var universalUserAgent = __webpack_require__(784);
+var universalUserAgent = __webpack_require__(604);
 
 function lowercaseKeys(object) {
   if (!object) {
@@ -21956,35 +21984,7 @@ function rmkidsSync (p, options) {
 /***/ }),
 /* 595 */,
 /* 596 */,
-/* 597 */
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, '__esModule', { value: true });
-
-function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
-
-var osName = _interopDefault(__webpack_require__(791));
-
-function getUserAgent() {
-  try {
-    return `Node.js/${process.version.substr(1)} (${osName()}; ${process.arch})`;
-  } catch (error) {
-    if (/wmic os get Caption/.test(error.message)) {
-      return "Windows <version undetectable>";
-    }
-
-    return "<environment undetectable>";
-  }
-}
-
-exports.getUserAgent = getUserAgent;
-//# sourceMappingURL=index.js.map
-
-
-/***/ }),
+/* 597 */,
 /* 598 */
 /***/ (function(module, __unusedexports, __webpack_require__) {
 
@@ -22035,7 +22035,7 @@ function getUserAgent() {
       return "Windows <version undetectable>";
     }
 
-    throw error;
+    return "<environment undetectable>";
   }
 }
 
@@ -38791,13 +38791,15 @@ class GitHub extends rest_1.Octokit {
     static getOctokitOptions(args) {
         const token = args[0];
         const options = Object.assign({}, args[1]); // Shallow clone - don't mutate the object provided by the caller
+        // Base URL - GHES or Dotcom
+        options.baseUrl = options.baseUrl || this.getApiBaseUrl();
         // Auth
         const auth = GitHub.getAuthString(token, options);
         if (auth) {
             options.auth = auth;
         }
         // Proxy
-        const agent = GitHub.getProxyAgent(options);
+        const agent = GitHub.getProxyAgent(options.baseUrl, options);
         if (agent) {
             // Shallow clone - don't mutate the object provided by the caller
             options.request = options.request ? Object.assign({}, options.request) : {};
@@ -38808,6 +38810,7 @@ class GitHub extends rest_1.Octokit {
     }
     static getGraphQL(args) {
         const defaults = {};
+        defaults.baseUrl = this.getGraphQLBaseUrl();
         const token = args[0];
         const options = args[1];
         // Authorization
@@ -38818,7 +38821,7 @@ class GitHub extends rest_1.Octokit {
             };
         }
         // Proxy
-        const agent = GitHub.getProxyAgent(options);
+        const agent = GitHub.getProxyAgent(defaults.baseUrl, options);
         if (agent) {
             defaults.request = { agent };
         }
@@ -38834,16 +38837,30 @@ class GitHub extends rest_1.Octokit {
         }
         return typeof options.auth === 'string' ? options.auth : `token ${token}`;
     }
-    static getProxyAgent(options) {
+    static getProxyAgent(destinationUrl, options) {
         var _a;
         if (!((_a = options.request) === null || _a === void 0 ? void 0 : _a.agent)) {
-            const serverUrl = 'https://api.github.com';
-            if (httpClient.getProxyUrl(serverUrl)) {
+            if (httpClient.getProxyUrl(destinationUrl)) {
                 const hc = new httpClient.HttpClient();
-                return hc.getAgent(serverUrl);
+                return hc.getAgent(destinationUrl);
             }
         }
         return undefined;
+    }
+    static getApiBaseUrl() {
+        return process.env['GITHUB_API_URL'] || 'https://api.github.com';
+    }
+    static getGraphQLBaseUrl() {
+        let url = process.env['GITHUB_GRAPHQL_URL'] || 'https://api.github.com/graphql';
+        // Shouldn't be a trailing slash, but remove if so
+        if (url.endsWith('/')) {
+            url = url.substr(0, url.length - 1);
+        }
+        // Remove trailing "/graphql"
+        if (url.toUpperCase().endsWith('/GRAPHQL')) {
+            url = url.substr(0, url.length - '/graphql'.length);
+        }
+        return url;
     }
 }
 exports.GitHub = GitHub;
@@ -39896,35 +39913,7 @@ function octokitValidate(octokit) {
 
 /***/ }),
 /* 783 */,
-/* 784 */
-/***/ (function(__unusedmodule, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, '__esModule', { value: true });
-
-function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
-
-var osName = _interopDefault(__webpack_require__(791));
-
-function getUserAgent() {
-  try {
-    return `Node.js/${process.version.substr(1)} (${osName()}; ${process.arch})`;
-  } catch (error) {
-    if (/wmic os get Caption/.test(error.message)) {
-      return "Windows <version undetectable>";
-    }
-
-    return "<environment undetectable>";
-  }
-}
-
-exports.getUserAgent = getUserAgent;
-//# sourceMappingURL=index.js.map
-
-
-/***/ }),
+/* 784 */,
 /* 785 */,
 /* 786 */
 /***/ (function(module) {
@@ -46687,12 +46676,12 @@ Object.defineProperty(exports, '__esModule', { value: true });
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
 var endpoint = __webpack_require__(444);
-var universalUserAgent = __webpack_require__(597);
+var universalUserAgent = __webpack_require__(604);
 var isPlainObject = _interopDefault(__webpack_require__(337));
 var nodeFetch = _interopDefault(__webpack_require__(983));
 var requestError = __webpack_require__(374);
 
-const VERSION = "5.4.2";
+const VERSION = "5.4.3";
 
 function getBufferResponse(response) {
   return response.arrayBuffer();
