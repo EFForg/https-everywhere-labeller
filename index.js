@@ -53,6 +53,22 @@ axios({
     console.log(error);
   });
 
+function return_label(rank_num) {
+  let label;
+  if(rank_num < 100){
+    label = "top-100";
+  } else if(rank_num < 1000){
+    label = "top-1k";
+  } else if(rank_num < 10000){
+    label = "top-10k";
+  } else if(rank_num < 100000){
+    label = "top-100k";
+  } else {
+    label = "top-1m";
+  }
+  return label;
+}
+
 // Label PR if Needed
 async function run(alexa) {
   const token = core.getInput('repo-token', { required: true });
@@ -60,14 +76,11 @@ async function run(alexa) {
   const pR = context.payload.pull_request;
 
   try {
-    if (context.payload.action !== 'opened' || !pR) {
-      return
-    }
-
     const prNumber = pR.number
+    console.log(prNumber);
 
     pR.labels.forEach(element => {
-      if( alexa_labels.includes(element.name))
+      if( alexaLabels.includes(element.name))
         return;
     });
 
@@ -79,15 +92,34 @@ async function run(alexa) {
 
     if (!fileList.every(file => rulesetGlob.match(file.name))) {
       // Don't touch PRs that modify anything except rulesets
-      console.log(fileList);
-      console.log(alexa);
+      console.log('No ruleset files in this PR');
       return;
     } else {
-      console.log(fileList);
-      console.log(alexa);
-      // Check file's domain and if it's in alexa domains
-      // strip to main domain
-      // If in Alexa domains, check rank,
+      fileList.forEach(file => {
+        if(rulesetGlob.match(file.name) !== null){
+
+          // Look at PR changes directly
+          let matches = file.patch.match(/((host)="([^"]|"")*")/g);
+
+          // strip to main domain
+          if( matches !== null) {
+            if( alexa.includes(matches[0].slice(6,-1))) {
+              let index = (matches[0].slice(6,-1))
+              let rank = alexa.indexOf(index);
+
+              if(rank !== null) {
+                let determined_label = return_label(rank);
+                console.log('labelling Pull Request');
+                octokit.issues.addLabels({
+                  ...context.repo,
+                  issue_number: prNumber,
+                  labels: [determined_label]
+                });
+              }
+            }
+          }
+        }
+      });
     }
   } catch (err) {
     core.error(err.stack)

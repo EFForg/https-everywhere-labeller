@@ -16,7 +16,7 @@
   "dependencies": {
     "@actions/core": "^1.2.3",
     "@actions/github": "^2.2.0",
-    "@octokit/rest": "^17.9.2",
+    "@octokit/rest": "^17.11.2",
     "axios": "^0.19.2",
     "express": "^4.17.1",
     "progress": "^2.0.3",
@@ -24,10 +24,10 @@
     "xml2js": "^0.4.23"
   },
   "devDependencies": {
-    "mocha": "^7.1.1",
-    "supertest": "^4.0.2",
     "@zeit/ncc": "^0.20.5",
-    "standard": "^14.3.1",
+    "mocha": "^7.2.0",
+    "standard": "^14.3.4",
+    "supertest": "^4.0.2",
     "webpack": "^4.41.2",
     "webpack-cli": "^3.3.10"
   },
